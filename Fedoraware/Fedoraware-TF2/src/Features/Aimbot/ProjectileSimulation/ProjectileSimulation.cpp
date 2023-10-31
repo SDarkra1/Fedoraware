@@ -61,18 +61,18 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	{
 	case TF_WEAPON_DIRECTHIT:
 	case TF_WEAPON_ROCKETLAUNCHER:
-	{
-		if (pWeapon->GetItemDefIndex() == Soldier_m_TheOriginal)
-			GetProjectileFireSetup(player, vAngles, { 23.5f, 0.f, bDucking ? 8.f : -3.f }, pos, ang, false, bQuick);
-		else
-			GetProjectileFireSetup(player, vAngles, Vec3(23.5f, 12.f, bDucking ? 8.f : -3.f), pos, ang, false, bQuick);
-		out = { TF_PROJECTILE_ROCKET, pos, ang, { 0.1f, 0.1f, 0.1f /*0.f, 0.f, 0.f i think is real size*/ }, bQuick ? 1081344.f : Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon, 0, true), 0.f, true };
-		return true;
-	}
 	case TF_WEAPON_PARTICLE_CANNON:
 	{
-		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, bDucking ? 8.f : -3.f }, pos, ang, false, bQuick);
-		out = { TF_PROJECTILE_ROCKET, pos, ang, { 0.1f, 0.1f, 0.1f /*0.f, 0.f, 0.f i think is real size*/ }, bQuick ? 1081344.f : Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon, 0, true), 0.f, true };
+		switch (pWeapon->GetItemDefIndex())
+		{
+			case Soldier_m_TheOriginal:
+				GetProjectileFireSetup(player, vAngles, { 23.5f, 0.f, bDucking ? 8.f : -3.f }, pos, ang, false, bQuick);
+			case Soldier_m_TheCowMangler5000:
+				GetProjectileFireSetup(player, vAngles, Vec3(23.5f, 8.f, bDucking ? 8.f : -3.f), pos, ang, false, bQuick);
+			default:
+				GetProjectileFireSetup(player, vAngles, Vec3(23.5f, 12.f, bDucking ? 8.f : -3.f), pos, ang, false, bQuick);
+		}
+		out = { TF_PROJECTILE_ROCKET, pos, ang, { 0.1f, 0.1f, 0.1f /*0.f, 0.f, 0.f is the real size*/ }, bQuick ? 1081344.f : Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon, 0, true), 0.f, true };
 		return true;
 	}
 	case TF_WEAPON_GRENADELAUNCHER:
@@ -124,7 +124,7 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	}
 	case TF_WEAPON_COMPOUND_BOW:
 	{
-		GetProjectileFireSetup(player, vAngles, { 23.5f, -8.f, -3.f }, pos, ang, false, bQuick);
+		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, -3.f }, pos, ang, false, bQuick);
 		float charge = I::GlobalVars->curtime - pWeapon->GetChargeBeginTime();
 		float speed = Math::RemapValClamped(charge, 0.f, 1.f, 1800.f, 2600.f);
 		float gravity = Math::RemapValClamped(charge, 0.f, 1.f, 0.5f, 0.1f);
@@ -137,13 +137,13 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	}
 	case TF_WEAPON_CROSSBOW:
 	{
-		GetProjectileFireSetup(player, vAngles, { 23.5f, -8.f, -3.f }, pos, ang, false, bQuick);
+		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, -3.f }, pos, ang, false, bQuick);
 		out = { TF_PROJECTILE_ARROW, pos, ang, { 3.f, 3.f, 3.f }, 2400.f, 0.2f, true };
 		return true;
 	}
 	case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
 	{
-		GetProjectileFireSetup(player, vAngles, { 23.5f, -8.f, -3.f }, pos, ang, false, bQuick);
+		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, -3.f }, pos, ang, false, bQuick);
 		out = { TF_PROJECTILE_BUILDING_REPAIR_BOLT, pos, ang, { 1.f, 1.f, 1.f }, 2400.f, 0.2f, true };
 		return true;
 	}
@@ -171,7 +171,7 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	}
 	case TF_WEAPON_CLEAVER:
 	{
-		GetProjectileFireSetup(player, vAngles, { 16.f, 8.f, -6.f }, pos, ang, true, bQuick);
+		GetProjectileFireSetup(player, vAngles, { 32.f, 0.f, -15.f }, pos, ang, true, bQuick);
 		out = { TF_PROJECTILE_CLEAVER, pos, ang, { 1.5f, 1.5f, 1.5f }, 3000.f, 2.f, false };
 		return true;
 	}
@@ -191,14 +191,34 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	case TF_WEAPON_JAR:
 	case TF_WEAPON_JAR_MILK:
 	{
-		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, -3.f }, pos, ang, true, bQuick);
+		GetProjectileFireSetup(player, vAngles, { 16.f, 8.f, -6.f }, pos, ang, true, bQuick);
 		out = { TF_PROJECTILE_JAR, pos, ang, { 1.5f, 1.5f, 1.5f }, 1000.f, 1.f, false, 2.2f };
 		return true;
 	}
 	case TF_WEAPON_JAR_GAS:
 	{
-		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, -3.f }, pos, ang, true, bQuick);
+		GetProjectileFireSetup(player, vAngles, { 16.f, 8.f, -6.f }, pos, ang, true, bQuick);
 		out = { TF_PROJECTILE_JAR_GAS, pos, ang, { 1.5f, 1.5f, 1.5f }, 2000.f, 1.f, false, 2.2f };
+		return true;
+	}
+	case TF_WEAPON_GRAPPLINGHOOK:
+	{ // I was bored
+		GetProjectileFireSetup(player, vAngles, { 23.5f, bFlipped ? -8.f : 8.f /*doesn't flip*/, -3.f }, pos, ang, false, bQuick);
+		static auto tf_grapplinghook_projectile_speed = g_ConVars.FindVar("tf_grapplinghook_projectile_speed");
+		float speed = tf_grapplinghook_projectile_speed->GetFloat();
+		if (player->IsAgilityRune())
+		{
+			switch (player->GetClassNum())
+			{
+				case CLASS_SOLDIER:
+				case CLASS_HEAVY:
+					speed = 2600.f;
+				default: // That's how Volvo works
+					speed = 3000.f;
+			}
+		}
+
+		out = { TF_PROJECTILE_GRAPPLINGHOOK, pos, ang, { 1.f, 1.f, 1.f }, speed, 0.5f, true }; // I think this is correct
 		return true;
 	}
 	}
