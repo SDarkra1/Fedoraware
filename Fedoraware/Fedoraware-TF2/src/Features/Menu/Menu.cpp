@@ -736,7 +736,7 @@ void CMenu::MenuVisuals()
 		// Visuals: Chams
 		case VisualsTab::Chams:
 		{
-			if (BeginTable("VisualsChamsTable", 2))
+			if (BeginTable("VisualsChamsTable", 3))
 			{
 				/* Column 1 */
 				if (TableColumnChild("VisualsChamsCol1"))
@@ -953,7 +953,13 @@ void CMenu::MenuVisuals()
 						WToggle("Rainbow Glow", &currentStruct.overlayRainbow);
 						WToggle("Pulse Glow", &currentStruct.overlayPulse);
 						WSlider("Glow Reduction", &currentStruct.overlayIntensity, 150.f, 0.1f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+					}
+				}
 
+				/* Column 2 */
+				if (TableColumnChild("VisualsChamsCol3"))
+				{
+					{
 						SectionTitle("World Chams");
 						WToggle("World chams###woldchamsbut", &Vars::Chams::World::Active.Value);
 
