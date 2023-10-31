@@ -954,9 +954,9 @@ void CMenu::MenuVisuals()
 						WToggle("Pulse Glow", &currentStruct.overlayPulse);
 						WSlider("Glow Reduction", &currentStruct.overlayIntensity, 150.f, 0.1f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
 					}
-				}
+				} EndChild();
 
-				/* Column 2 */
+				/* Column 3 */
 				if (TableColumnChild("VisualsChamsCol3"))
 				{
 					{
