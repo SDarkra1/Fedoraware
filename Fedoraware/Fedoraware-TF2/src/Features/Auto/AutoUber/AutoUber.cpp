@@ -149,7 +149,9 @@ int BulletDangerValue(CBaseEntity* pPatient)
 
 		if (pProjectile->GetClassID() != ETFClassID::CTFProjectile_Arrow &&
 			pProjectile->GetClassID() != ETFClassID::CTFProjectile_EnergyBall &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_EnergyRing
+			pProjectile->GetClassID() != ETFClassID::CTFProjectile_EnergyRing &&
+			pProjectile->GetClassID() != ETFClassID::CTFProjectile_Cleaver &&
+			pProjectile->GetClassID() != ETFClassID::CTFProjectile_HealingBolt
 			)
 		{
 			continue;
@@ -216,6 +218,37 @@ int FireDangerValue(CBaseEntity* pPatient)
 			shouldSwitch = 1;
 		}
 	}
+
+	for (const auto& pProjectile : g_EntityCache.GetGroup(EGroupType::WORLD_PROJECTILES))
+	{
+		if (pProjectile->GetVelocity().IsZero())
+		{
+			continue;
+		}
+
+		if (pProjectile->GetTeamNum() == pPatient->GetTeamNum())
+		{
+			continue;
+		}
+
+		if (pProjectile->GetClassID() != ETFClassID::CTFProjectile_Flare &&
+			pProjectile->GetClassID() != ETFClassID::CTFProjectile_BallOfFire &&
+			pProjectile->GetClassID() != ETFClassID::CTFProjectile_SpellFireball
+			)
+		{
+			continue;
+		}
+
+		const Vec3 vPredicted = (pProjectile->GetAbsOrigin() + pProjectile->GetVelocity());
+		const float flHypPred = sqrtf(pPatient->GetVecOrigin().DistToSqr(vPredicted));
+		const float flHyp = sqrtf(pPatient->GetVecOrigin().DistToSqr(pProjectile->GetVecOrigin()));
+		if (flHypPred < flHyp && pPatient->GetVecOrigin().DistTo(vPredicted) < pProjectile->GetVelocity().Length())
+		{
+			if (pProjectile->IsCritBoosted() || pPatient->InCond(TF_COND_BURNING)) { return 2; }
+			shouldSwitch = 1;
+		}
+	}
+
 
 	return shouldSwitch;
 }
