@@ -271,8 +271,11 @@ namespace Vars
 		CVar(VoiceCommand, false)
 		CVar(ReactFoV, 25)
 		CVar(BulletRes, true)
+		CVar(BulletSensitivity, 100.f)
 		CVar(BlastRes, true)
+		CVar(BlastSensitivity, 100.f)
 		CVar(FireRes, true)
+		CVar(FireSensitivity, 100.f)
 		CVar(ReactClasses, 0b000000000); //this is intuitive
 	SUBNAMESPACE_END(Uber);
 

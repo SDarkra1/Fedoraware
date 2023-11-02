@@ -517,6 +517,9 @@ void CMenu::MenuTrigger()
 			if (Vars::Triggerbot::Uber::AutoVacc.Value)
 			{
 				MultiCombo({ "Bullet", "Blast", "Fire" }, { &Vars::Triggerbot::Uber::BulletRes.Value, &Vars::Triggerbot::Uber::BlastRes.Value, &Vars::Triggerbot::Uber::FireRes.Value }, "Allowed Resistances");
+				if (Vars::Triggerbot::Uber::BulletRes.Value) {WSlider("Bullet Damage Sensitivity", &Vars::Triggerbot::Uber::BulletSensitivity.Value, 1.f, 100.f, "%.0f%%", 1.0f ); HelpMarker("The amount of danger the heal target must be under to pop");}
+				if (Vars::Triggerbot::Uber::BlastRes.Value) {WSlider("Blast Damage Sensitivity", &Vars::Triggerbot::Uber::BlastSensitivity.Value, 1.f, 100.f, "%.0f%%", 1.0f ); HelpMarker("The amount of danger the heal target must be under to pop");}
+				if (Vars::Triggerbot::Uber::FireRes.Value) {WSlider("Fire Damage Sensitivity", &Vars::Triggerbot::Uber::FireSensitivity.Value, 1.f, 100.f, "%.0f%%", 1.0f ); HelpMarker("The amount of danger the heal target must be under to pop");}
 			}
 			{
 				static std::vector Names{ "Scout", "Soldier", "Pyro", "Heavy", "Engineer", "Sniper", "Spy" };
@@ -524,7 +527,7 @@ void CMenu::MenuTrigger()
 
 				MultiFlags(Names, Values, &Vars::Triggerbot::Uber::ReactClasses.Value, "Hitscan React Classes###TriggerbotAutoVaccClasses");
 			}
-			WSlider("Health left (%)###TriggerUberHealthLeft", &Vars::Triggerbot::Uber::HealthLeft.Value, 1.f, 99.f, "%.0f%%", 1.0f); HelpMarker("The amount of health the heal target must be below to actiavte");
+			WSlider("Health left (%)###TriggerUberHealthLeft", &Vars::Triggerbot::Uber::HealthLeft.Value, 1.f, 99.f, "%.0f%%", 1.0f); HelpMarker("The amount of health the heal target must be below to activate");
 			WSlider("Reaction FoV###TriggerUberReactFoV", &Vars::Triggerbot::Uber::ReactFoV.Value, 0, 90, "%d", 1); HelpMarker("Checks whether you are within a certain FoV from legit players before auto ubering.");
 			WToggle("Activate charge trigger", &Vars::Triggerbot::Uber::VoiceCommand.Value); HelpMarker("Will ubercharge regardless of anything if your target says activate charge");
 		} EndChild();
@@ -2016,10 +2019,6 @@ void CMenu::MenuMisc()
 				F::DMEChams.CreateMaterials();
 				F::Glow.CreateMaterials();
 			}
-			if (Button("Print Hashes", SIZE_FULL_WIDTH))
-			{
-				Hash::PrintHash();
-			}
 			//if (Button("CPrint", ImVec2(btnWidth, 20))){
 			//	I::CenterPrint->Print((char*)"niggaz");
 			//}
@@ -2429,6 +2428,11 @@ void CMenu::DebugMenu()
 		if (Button("Update Discord RPC"))
 		{
 			F::DiscordRPC.Update();
+		}
+
+		if (Button("Print Hashes"))
+		{
+			Hash::PrintHash();
 		}
 
 		// Particle tester

@@ -12,298 +12,148 @@ int vaccChangeTicks = 0;
 int vaccIdealResist = 0;
 int vaccChangeTimer = 0;
 
-int BulletDangerValue(CBaseEntity* pPatient)
-{
-	bool anyZoomedSnipers = false;
-	bool anyEnemies = false;
+float BlastDangerValue = 0.f;
+float FireDangerValue = 0.f;
 
-	// Find dangerous playes in other team
+// Find dangerous players on the other team
+// None of these values correctly account for ramp-up / fall-off
+float BulletDangerValue(CBaseEntity* pPatient)
+{
 	for (const auto& player : g_EntityCache.GetGroup(EGroupType::PLAYERS_ENEMIES))
 	{
-		if (!player->IsAlive())
-		{
-			continue;
-		}
-
-		if (player->GetDormant())
-		{
-			continue;
-		}
-
-		switch (player->GetClassNum())
-		{
-			case 1: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 0)) { continue; }
-				  break; //	scout
-			case 2: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 7)) { continue; }
-				  break; //	sniper
-			case 3: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 1)) { continue; }
-				  break; //	soldier
-			case 6: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 4)) { continue; }
-				  break; //	heavy
-			case 7: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 2)) { continue; }
-				  break; //	pyro
-			case 8: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 8)) { continue; }
-				  break; //	spy
-			case 9: if (!(Vars::Triggerbot::Uber::ReactClasses.Value & 1 << 5)) { continue; }
-				  break; //	engineer
-			default: { continue; }
-		}
-
-		if (player->InCond(TF_COND_PHASE))
-		{
-			return false;
-		}
-
 		const auto& pWeapon = player->GetActiveWeapon();
-
-		if (!pWeapon)
-		{
-			return 0;
-		}
-
-		if (pWeapon->GetSlot() == SLOT_MELEE)
-		{
-			return false;
-		}
-
-		if (pWeapon->GetClassID() == ETFClassID::CTFLunchBox || pWeapon->GetClassID() == ETFClassID::CTFLunchBox_Drink || pWeapon->GetClassID() == ETFClassID::CTFWeaponPDA)
-		{
-			return false;
-		}
-
-		// Ignore ignored players
-		if (F::AutoGlobal.ShouldIgnore(player)) { continue; }
+		const float ThreatDistance = pPatient->GetVecOrigin().DistTo(player->GetVecOrigin());
 
 		const Vec3 vAngleTo = Math::CalcAngle(player->GetEyePosition(), pPatient->GetWorldSpaceCenter());
 		const float flFOVTo = Math::CalcFov(player->GetEyeAngles(), vAngleTo);
 
-		if (G::PlayerPriority[player->GetIndex()].Mode != 4 && Vars::Triggerbot::Uber::ReactFoV.Value)
+		if (player && player->IsAlive() && !player->IsAGhost() && !player->IsTaunting() && !player->InCond(TF_COND_PHASE) && !F::AutoGlobal.ShouldIgnore(player) && pWeapon)
 		{
-			if ((flFOVTo - (3.f * G::ChokeMap[player->GetIndex()])) > static_cast<float>(Vars::Triggerbot::Uber::ReactFoV.Value)) { continue; } //	account for choking :D
-		}
-
-		if (player->InCond(TF_COND_ZOOMED))
-		{
-			anyZoomedSnipers = true;
-			if (Utils::VisPos(pPatient, player, pPatient->GetHitboxPos(HITBOX_HEAD), player->GetEyePosition()))
+			switch (pWeapon->GetWeaponID()) // Potential Threats TODO: Get viewangles and pop if they're looking at us or marked as a cheater.
 			{
-				return 2;
-			}
-		}
-
-
-		if (Utils::VisPos(pPatient, player, pPatient->GetHitboxPos(HITBOX_PELVIS),
-			player->GetEyePosition()))
-		{
-			if (const auto& pWeapon = player->GetActiveWeapon())
+			case TF_WEAPON_SNIPERRIFLE:
+			case TF_WEAPON_SNIPERRIFLE_DECAP:
+			case TF_WEAPON_SNIPERRIFLE_CLASSIC:
 			{
-				if (player->GetClassNum() == CLASS_SPY && pWeapon->GetSlot() == SLOT_PRIMARY || player->GetClassNum() == CLASS_SCOUT || player->GetClassNum() == CLASS_HEAVY || player->GetClassNum() ==
-					CLASS_MEDIC || player->GetClassNum() == CLASS_SNIPER || player->GetClassNum() == CLASS_ENGINEER)
-				{
-					if (pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 350.f ||
-						(pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 600.f &&
-						(player->GetClassNum() == CLASS_SPY || player->GetClassNum() == CLASS_SCOUT || player->GetClassNum() == CLASS_HEAVY || player->GetClassNum() == CLASS_MEDIC || player->
-						GetClassNum() == CLASS_SNIPER || player->GetClassNum() == CLASS_ENGINEER)))
-					{
-						return 2;
-					}
-				}
-
-				if (pWeapon->GetClassID() == ETFClassID::CTFShotgun_Pyro || pWeapon->GetClassID() == ETFClassID::CTFShotgun_Soldier)
-				{
-					{
-						if (pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 50.f ||
-							(pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 250.f && (
-							(player->GetClassNum() == CLASS_PYRO))))
-						{
-							return 2;
-						}
-
-						if (pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 50.f ||
-							(pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 250.f && (
-							(player->GetClassNum() == CLASS_SOLDIER))))
-						{
-							return 2;
-						}
-					}
-				}
+				const float SniperDamage = Math::RemapValClamped(pWeapon->GetChargeDamage(), 0.0f, 150.0f, 0.0f, 450.0f);
+				if ((player->InCond(TF_COND_ZOOMED)) && (Utils::VisPos(pPatient, player, pPatient->GetHitboxPos(HITBOX_HEAD), player->GetEyePosition()) || G::PlayerPriority[pi.friendsID].Mode() = 4))
+					return SniperDamage;
+				else
+					return SniperDamage / 3;
+				break;
 			}
-
-			anyEnemies = true;
+			case TF_WEAPON_SCATTERGUN:
+			case TF_WEAPON_SODA_POPPER:
+			case TF_WEAPON_PEP_BRAWLER_BLASTER:
+			{
+				if (pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 250.f)
+					return 104.f;
+				else
+					return 20.f;
+				break;
+			}
+			case TF_WEAPON_MINIGUN:
+			{
+				if (pWeapon->GetWeaponState() != 0)
+					return 12.f;
+				break;
+			}
+			case TF_WEAPON_SHOTGUN_PYRO:
+			case TF_WEAPON_SHOTGUN_HWG:
+			case TF_WEAPON_SHOTGUN_SOLDIER:
+			case TF_WEAPON_SHOTGUN_PRIMARY:
+			case TF_WEAPON_SENTRY_REVENGE:
+			{
+				if (pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) < 250.f)
+					return 90.f;
+				else
+					return 20.f;
+				break;
+			}
+			case TF_WEAPON_HANDGUN_SCOUT_PRIMARY:
+			{
+				return ;
+				break;
+			}
+			case TF_WEAPON_PISTOL:
+			case TF_WEAPON_PISTOL_SCOUT:
+			case TF_WEAPON_REVOLVER:
+			case TF_WEAPON_SENTRY_BULLET:
+			case TF_WEAPON_HANDGUN_SCOUT_SECONDARY:
+			case TF_WEAPON_CHARGED_SMG:
+			case TF_WEAPON_SMG:
+			{
+				return ;
+				break;
+			}
+			default:
+				return 0.f;
+				break;
+			}
 		}
 	}
-
-	bool hasHitscan = false;
 
 	for (const auto& pProjectile : g_EntityCache.GetGroup(EGroupType::WORLD_PROJECTILES))
 	{
-		if (pProjectile->GetVelocity().IsZero())
+		if (!pProjectile->GetVelocity().IsZero() && !(pProjectile->GetTeamNum() == pPatient->GetTeamNum()))
 		{
-			continue;
-		}
+			float ProjectileDamage = 0.f;
 
-		if (pProjectile->GetTeamNum() == pPatient->GetTeamNum())
-		{
-			continue;
-		}
+			switch (pProjectile->GetClassID())
+			{
+			case ETFClassID::CTFProjectile_Arrow:
+			{
+				ProjectileDamage = 120.f;
+			}
+			case ETFClassID::CTFProjectile_EnergyRing:
+			{
+				ProjectileDamage = 16.f;
+			}
+			case ETFClassID::CTFProjectile_Cleaver:
+			{
+				ProjectileDamage = 50.f;
+			}
+			case ETFClassID::CTFProjectile_HealingBolt:
+			{
+				ProjectileDamage = .f;
+			}
+			case ETFClassID::CTFProjectile_Flare:
+			{
+				ProjectileDamage = .f;
+			}
+			case ETFClassID::CTFProjectile_Throwable:
+			{
+				ProjectileDamage = .f;
+			}
+			default:
+				ProjectileDamage = 0.f;
+				break;
+			}
 
-		if (pProjectile->GetClassID() != ETFClassID::CTFProjectile_Arrow &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_EnergyBall &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_EnergyRing &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_Cleaver &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_HealingBolt
-			)
-		{
-			continue;
-		}
-
-		const Vec3 vPredicted = (pProjectile->GetAbsOrigin() + pProjectile->GetVelocity());
-		const float flHypPred = sqrtf(pPatient->GetVecOrigin().DistToSqr(vPredicted));
-		const float flHyp = sqrtf(pPatient->GetVecOrigin().DistToSqr(pProjectile->GetVecOrigin()));
-		if (flHypPred < flHyp && pPatient->GetVecOrigin().DistTo(vPredicted) < pProjectile->GetVelocity().Length())
-		{
-			if (pProjectile->IsCritBoosted()) { return 2; }
-			hasHitscan = true;
+			const Vec3 vPredicted = (pProjectile->GetAbsOrigin() + pProjectile->GetVelocity());
+			const float flHypPred = sqrtf(pPatient->GetVecOrigin().DistToSqr(vPredicted));
+			const float flHyp = sqrtf(pPatient->GetVecOrigin().DistToSqr(pProjectile->GetVecOrigin()));
+			if (flHypPred < flHyp && pPatient->GetVecOrigin().DistTo(vPredicted) < pProjectile->GetVelocity().Length())
+			{
+				float ProjectileDamageFinal = ProjectileDamage;
+				if (pProjectile->IsCritBoosted()) { ProjectileDamageFinal = ProjectileDamage * 3.f; }
+				else { return ProjectileDamageFinal; }
+			}
+			else { return 0; }
 		}
 	}
-
-	if (hasHitscan)
-	{
-		if (pPatient->GetHealth() < 449)
-		{
-			return 2;
-		}
-	}
-
-	return (anyZoomedSnipers || anyEnemies) ? 1 : 0;
 }
 
-int FireDangerValue(CBaseEntity* pPatient)
+float BlastDangerValue(CBaseEntity* pPatient)
 {
-	int shouldSwitch = 0;
 
-	for (const auto& player : g_EntityCache.GetGroup(EGroupType::PLAYERS_ENEMIES))
-	{
-		if (!player->IsAlive())
-		{
-			continue;
-		}
-
-		if (player->GetClassNum() != CLASS_PYRO) // Pyro only
-		{
-			continue;
-		}
-
-		if (pPatient->GetVecOrigin().DistTo(player->GetVecOrigin()) > 450.f)
-		{
-			continue;
-		}
-
-		const auto& pPlayerWeapon = player->GetActiveWeapon();
-
-		if (!pPlayerWeapon)
-		{
-			return 0;
-		}
-
-		if (pPlayerWeapon->GetClassID() == ETFClassID::CTFFlameThrower)
-		{
-			if (pPatient->InCond(TF_COND_BURNING) && pPatient->GetHealth() < 250)
-			{
-				if (pPatient->GetClassNum() == CLASS_PYRO) { return 1; }
-				return 2;
-			}
-
-			if (player->InCond(TF_COND_CRITBOOSTED_RAGE_BUFF)) { return 2; }
-			shouldSwitch = 1;
-		}
-	}
-
-	for (const auto& pProjectile : g_EntityCache.GetGroup(EGroupType::WORLD_PROJECTILES))
-	{
-		if (pProjectile->GetVelocity().IsZero())
-		{
-			continue;
-		}
-
-		if (pProjectile->GetTeamNum() == pPatient->GetTeamNum())
-		{
-			continue;
-		}
-
-		if (pProjectile->GetClassID() != ETFClassID::CTFProjectile_Flare &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_BallOfFire &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_SpellFireball
-			)
-		{
-			continue;
-		}
-
-		const Vec3 vPredicted = (pProjectile->GetAbsOrigin() + pProjectile->GetVelocity());
-		const float flHypPred = sqrtf(pPatient->GetVecOrigin().DistToSqr(vPredicted));
-		const float flHyp = sqrtf(pPatient->GetVecOrigin().DistToSqr(pProjectile->GetVecOrigin()));
-		if (flHypPred < flHyp && pPatient->GetVecOrigin().DistTo(vPredicted) < pProjectile->GetVelocity().Length())
-		{
-			if (pProjectile->IsCritBoosted() || pPatient->InCond(TF_COND_BURNING)) { return 2; }
-			shouldSwitch = 1;
-		}
-	}
-
-
-	return shouldSwitch;
 }
 
-int BlastDangerValue(CBaseEntity* pPatient)
+float FireDangerValue(CBaseEntity* pPatient)
 {
-	bool hasRockets = false;
 
-	for (const auto& pProjectile : g_EntityCache.GetGroup(EGroupType::WORLD_PROJECTILES))
-	{
-		if (hasRockets && !pProjectile->IsCritBoosted())
-		{
-			continue;
-		}
-
-		if (pProjectile->GetVelocity().IsZero())
-		{
-			continue;
-		}
-
-		if (pProjectile->GetTouched()) // Ignore landed Stickies
-		{
-			continue;
-		}
-
-		if (pProjectile->GetTeamNum() == pPatient->GetTeamNum())
-		{
-			continue;
-		}
-
-		if (pProjectile->GetClassID() != ETFClassID::CTFProjectile_Rocket &&
-			pProjectile->GetClassID() != ETFClassID::CTFProjectile_SentryRocket &&
-			pProjectile->GetClassID() != ETFClassID::CTFGrenadePipebombProjectile)
-		{
-			continue;
-		}
-
-		// Projectile is getting closer
-		if (pPatient->GetAbsOrigin().DistTo(pProjectile->GetAbsOrigin()) <= 275.f)
-		{
-			hasRockets = true;
-		}
-	}
-
-	if (hasRockets)
-	{
-		if (pPatient->GetHealth() < 235)
-		{
-			return 2;
-		}
-		return 1;
-	}
-
-	return 0;
 }
+
 
 int CurrentResistance()
 {
@@ -326,15 +176,22 @@ int ChargeCount()
 
 int OptimalResistance(CBaseEntity* pPatient, bool* pShouldPop)
 {
-	const int bulletDanger = BulletDangerValue(pPatient);
-	const int fireDanger = FireDangerValue(pPatient);
-	const int blastDanger = BlastDangerValue(pPatient);
+	const float bulletDanger = BulletDangerValue(pPatient);
+	const float fireDanger = FireDangerValue(pPatient);
+	const float blastDanger = BlastDangerValue(pPatient);
+
+	const float bulletSensivity = Vars::Triggerbot::Uber::BulletSensitivity.Value;
+	const float fireSensivity = Vars::Triggerbot::Uber::FireSensitivity.Value;
+	const float blastSensivity = Vars::Triggerbot::Uber::BlastSensitivity.Value;
+
+	m_flHealth = static_cast<float>(pTarget->GetHealth());
+
 	if (pShouldPop)
 	{
 		int charges = ChargeCount();
-		if (bulletDanger > 1 && Vars::Triggerbot::Uber::BulletRes.Value) { *pShouldPop = true; }
-		if (fireDanger > 1 && Vars::Triggerbot::Uber::FireRes.Value) { *pShouldPop = true; }
-		if (blastDanger > 1 && Vars::Triggerbot::Uber::BlastRes.Value) { *pShouldPop = true; }
+		if (bulletDanger >= (bulletSensivity || m_flHealth) && Vars::Triggerbot::Uber::BulletRes.Value) { *pShouldPop = true; }
+		if (fireDanger >= (fireSensivity || m_flHealth) && Vars::Triggerbot::Uber::FireRes.Value) { *pShouldPop = true; }
+		if (blastDanger >= (blastSensivity || m_flHealth) && Vars::Triggerbot::Uber::BlastRes.Value) { *pShouldPop = true; }
 	}
 
 	if (!(bulletDanger || fireDanger || blastDanger))
