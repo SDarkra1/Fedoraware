@@ -162,7 +162,7 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 		float speed = 1200.f;
 		switch (pWeapon->GetWeaponID())
 		{
-		case TF_WEAPON_PARTICLE_CANNON: speed = Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon); break;
+		case TF_WEAPON_PARTICLE_CANNON: speed = Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon, 0, true); break;
 		case TF_WEAPON_DRG_POMSON: pos.z -= 13.f; break;
 		}
 			pos.z -= 13.f;
