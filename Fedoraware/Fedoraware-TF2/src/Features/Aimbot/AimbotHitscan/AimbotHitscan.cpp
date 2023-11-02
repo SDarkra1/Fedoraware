@@ -158,8 +158,6 @@ std::vector<Target_t> CAimbotHitscan::GetTargets(CBaseEntity* pLocal, CBaseComba
 			// Get the target priority
 			const auto& priority = F::AimbotGlobal.GetPriority(pTarget->GetIndex());
 
-			
-
 			PriorityHitbox = nHitbox;
 
 			const AimInfo_t tTargetInfo = F::AimbotGlobal.GetInfo(pTarget, vLocalPos, vLocalAngles, Vars::Aimbot::Hitscan::SortMethod.Value);
@@ -354,7 +352,6 @@ bool CAimbotHitscan::ScanHitboxes(CBaseEntity* pLocal, Target_t& target)
 							if (!IsHitboxValid(nHitbox, Vars::Aimbot::Hitscan::ScanHitboxes.Value, (target.m_pEntity->GetVelocity().Length() < 10.f))) { continue; }
 							if (nHitbox == -1) { nHitbox = PriorityHitbox; }
 							else if (nHitbox == PriorityHitbox) { continue; }
-
 
 							Vec3 vHitbox = target.m_pEntity->GetHitboxPos(nHitbox);
 

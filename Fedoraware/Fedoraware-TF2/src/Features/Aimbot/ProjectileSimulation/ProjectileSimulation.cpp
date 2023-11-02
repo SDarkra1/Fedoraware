@@ -61,18 +61,12 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	{
 	case TF_WEAPON_DIRECTHIT:
 	case TF_WEAPON_ROCKETLAUNCHER:
-	case TF_WEAPON_PARTICLE_CANNON:
 	{
-		switch (pWeapon->GetItemDefIndex())
-		{
-			case Soldier_m_TheOriginal:
-				GetProjectileFireSetup(player, vAngles, { 23.5f, 0.f, bDucking ? 8.f : -3.f }, pos, ang, false, bQuick);
-			case Soldier_m_TheCowMangler5000:
-				GetProjectileFireSetup(player, vAngles, Vec3(23.5f, 8.f, bDucking ? 8.f : -3.f), pos, ang, false, bQuick);
-			default:
-				GetProjectileFireSetup(player, vAngles, Vec3(23.5f, 12.f, bDucking ? 8.f : -3.f), pos, ang, false, bQuick);
-		}
-		out = { TF_PROJECTILE_ROCKET, pos, ang, { 0.1f, 0.1f, 0.1f /*0.f, 0.f, 0.f is the real size*/ }, bQuick ? 1081344.f : Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon, 0, true), 0.f, true };
+		if (pWeapon->GetItemDefIndex() == Soldier_m_TheOriginal)
+			GetProjectileFireSetup(player, vAngles, { 23.5f, 0.f, bDucking ? 8.f : -3.f }, pos, ang, false, bQuick);
+		else
+			GetProjectileFireSetup(player, vAngles, Vec3(23.5f, 12.f, bDucking ? 8.f : -3.f), pos, ang, false, bQuick);
+		out = { TF_PROJECTILE_ROCKET, pos, ang, { 0.2f, 0.2f, 0.2f /*0.f, 0.f, 0.f is the real size*/ }, bQuick ? 1081344.f : Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon, 0, true), 0.f, true };
 		return true;
 	}
 	case TF_WEAPON_GRENADELAUNCHER:
@@ -150,7 +144,7 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	case TF_WEAPON_SYRINGEGUN_MEDIC:
 	{
 		GetProjectileFireSetup(player, vAngles, { 16.f, 6.f, -8.f }, pos, ang, false, bQuick);
-		out = { TF_PROJECTILE_SYRINGE, pos, ang, { 1.f, 1.f, 1.f }, 1000.f, 0.3f, true }; 	// probably inaccurate
+		out = { TF_PROJECTILE_SYRINGE, pos, ang, { 0.5f, 0.5f, 0.5f }, 1000.f, 0.3f, true }; 	// probably inaccurate
 		return true;
 	}
 	case TF_WEAPON_FLAME_BALL:
@@ -162,11 +156,17 @@ bool CProjectileSimulation::GetInfo(CBaseEntity* player, CBaseCombatWeapon* pWea
 	}
 	case TF_WEAPON_RAYGUN:
 	case TF_WEAPON_DRG_POMSON:
+	case TF_WEAPON_PARTICLE_CANNON:
 	{
 		GetProjectileFireSetup(player, vAngles, { 23.5f, 8.f, bDucking ? 8.f : -3.f }, pos, ang, false, bQuick);
-		if (pWeapon->GetWeaponID() == TF_WEAPON_DRG_POMSON)
+		float speed = 1200.f;
+		switch (pWeapon->GetWeaponID())
+		{
+		case TF_WEAPON_PARTICLE_CANNON: speed = Utils::ATTRIB_HOOK_FLOAT(1100.f, "mult_projectile_speed", pWeapon); break;
+		case TF_WEAPON_DRG_POMSON: pos.z -= 13.f; break;
+		}
 			pos.z -= 13.f;
-		out = { TF_PROJECTILE_ENERGY_RING, pos, ang, { 1.f, 1.f, 1.f }, bQuick ? 1081344.f : 1200.f, 0.f, true };
+		out = { TF_PROJECTILE_ENERGY_RING, pos, ang, { 1.f, 1.f, 1.f }, bQuick ? 1081344.f : speed, 0.f, true };
 		return true;
 	}
 	case TF_WEAPON_CLEAVER:
